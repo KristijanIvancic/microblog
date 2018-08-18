@@ -180,6 +180,25 @@ def reset_password_request():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             send_password_reset_mail(user)
-            flash('Check your email for the instructions to reset your password.')
+        flash('Check your email for the instructions to reset your password.')
         return redirect(url_for('login'))
     return render_template('reset_password_request.html', form=form)
+
+
+@app.route('/reset_password/<token>', method=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated():
+        return redirect(url_for('index'))
+
+    user = User.verify_reset_password_token(token)
+    if not user:
+        return redirect(url_for('user'))
+
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        flash('Your password has been reset.')
+        return redirect(url_for('login'))
+
+    return render_template('reset_password.html', form=form)
